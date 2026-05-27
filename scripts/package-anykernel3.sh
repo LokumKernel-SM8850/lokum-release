@@ -81,7 +81,8 @@ if ! file "$SRC/tools/busybox" "$SRC/tools/magiskboot" | rg -q 'ARM aarch64'; th
   file "$SRC/tools/busybox" "$SRC/tools/magiskboot" >&2
   exit 1
 fi
-if ! strings -a "$SRC/Image" | rg -F -m 1 "Linux version $KERNEL_RELEASE" >/dev/null; then
+image_kernel_string="$(strings -a "$SRC/Image" | rg -F -m 1 "Linux version $KERNEL_RELEASE" || true)"
+if [[ -z "$image_kernel_string" ]]; then
   echo "Packaged Image does not contain expected release string: $KERNEL_RELEASE" >&2
   exit 1
 fi
