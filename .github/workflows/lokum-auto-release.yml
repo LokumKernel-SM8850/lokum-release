@@ -1,0 +1,90 @@
+name: LokumKernel auto build/release
+
+on:
+  workflow_dispatch:
+    inputs:
+      manifest:
+        description: Release manifest to use
+        required: true
+        default: manifests/pandora-os3.0.309-android16-6.12.38-exp.env
+      source_branch:
+        description: Kernel source branch in LokumKernel-SM8850/android_kernel_xiaomi_sm8850
+        required: true
+        default: android16-6.12-2025-09-ksunext-susfs
+      force_build:
+        description: Build even when tracked KernelSU/SUSFS upstream heads have not changed
+        type: boolean
+        required: true
+        default: true
+      update_ksunext:
+        description: Try to replay the Lokum KernelSU/SUSFS integration on latest KernelSU Next dev
+        type: boolean
+        required: true
+        default: true
+      update_susfs:
+        description: Try to re-apply the SUSFS GKI patch from latest susfs4ksu branch
+        type: boolean
+        required: true
+        default: true
+      publish_release:
+        description: Create a GitHub pre-release and upload artifacts
+        type: boolean
+        required: true
+        default: true
+      release_suffix:
+        description: Optional suffix for the generated release id; leave empty for timestamp
+        required: false
+        default: ""
+  schedule:
+    - cron: "17 2 * * *"
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: lokum-auto-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  auto-release:
+    name: Build and publish pre-release
+    runs-on: [self-hosted, linux, x64, lokum-sm8850]
+    timeout-minutes: 180
+    steps:
+      - name: Checkout release tooling
+        uses: actions/checkout@v6
+
+      - name: Show upstream status
+        env:
+          MANIFEST: ${{ github.workspace }}/${{ inputs.manifest || 'manifests/pandora-os3.0.309-android16-6.12.38-exp.env' }}
+          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE || 'LOKUM_WORKSPACE' }}
+        run: scripts/ci/check-upstreams.sh
+
+      - name: Build, verify, package, and optionally publish
+        id: auto_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MANIFEST: ${{ github.workspace }}/${{ inputs.manifest || 'manifests/pandora-os3.0.309-android16-6.12.38-exp.env' }}
+          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE || 'LOKUM_WORKSPACE' }}
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+          FORCE_BUILD: ${{ inputs.force_build }}
+          UPDATE_KSUNEXT: ${{ inputs.update_ksunext }}
+          UPDATE_SUSFS: ${{ inputs.update_susfs }}
+          PUBLISH_RELEASE: ${{ inputs.publish_release }}
+          RELEASE_SUFFIX: ${{ inputs.release_suffix }}
+        run: scripts/ci/auto-release.sh
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## LokumKernel auto release"
+            echo ""
+            echo "Release id: ${{ steps.auto_release.outputs.release_id }}"
+            echo "Package dir: ${{ steps.auto_release.outputs.package_out }}"
+            echo "Zip: ${{ steps.auto_release.outputs.zip_name }}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -12,6 +12,8 @@ scripts/build.sh             Kleaf build wrapper
 scripts/verify.sh            boot image and config verifier
 scripts/package-anykernel3.sh AnyKernel3 zip packager with arm64 Magisk tools
 scripts/release.sh           build + verify + package + release notes
+scripts/ci/                  guarded self-hosted auto-build/pre-release helpers
+.github/workflows/           GitHub Actions workflow for CI-assisted releases
 docs/                        flashing, testing, update, GitHub setup docs
 out/                         ignored generated artifacts
 ```
@@ -41,3 +43,7 @@ Future remote:
 ```text
 git@github.com:LokumKernel-SM8850/lokum-release.git
 ```
+
+## CI-assisted releases
+
+See `docs/CI-AUTO-RELEASE.md` for the self-hosted runner workflow that watches KernelSU Next/SUSFS upstreams and publishes verified pre-release artifacts when integration succeeds.
