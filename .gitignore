@@ -1,0 +1,19 @@
+# Generated release outputs
+/out/
+/dist/
+*.img
+*.zip
+*.tar
+*.tar.gz
+*.log
+*.apk
+*.sha256
+SHA256SUMS
+
+# Download/cache area
+/.cache/
+
+# Local editor/OS noise
+.DS_Store
+*.swp
+*~
