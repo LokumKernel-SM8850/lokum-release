@@ -122,6 +122,7 @@ else
     --cpuunits $(shell_quote "$PROXMOX_RUNNER_CPUUNITS") \
     --memory $(shell_quote "$PROXMOX_RUNNER_MEMORY_MB") \
     --swap $(shell_quote "$PROXMOX_RUNNER_SWAP_MB") \
+    --nameserver $(shell_quote "$LOKUM_NAMESERVER") \
     --net0 $(shell_quote "$net0") \
     --ostype $(shell_quote "$PROXMOX_RUNNER_OSTYPE") \
     --unprivileged $(shell_quote "$PROXMOX_RUNNER_UNPRIVILEGED") \

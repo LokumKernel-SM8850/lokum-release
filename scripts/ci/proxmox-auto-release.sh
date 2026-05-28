@@ -161,6 +161,7 @@ remote "pct create $(shell_quote "$vmid") $(shell_quote "$PROXMOX_CT_TEMPLATE") 
   --cores $(shell_quote "$PROXMOX_CT_CORES") \
   --memory $(shell_quote "$PROXMOX_CT_MEMORY_MB") \
   --swap $(shell_quote "$PROXMOX_CT_SWAP_MB") \
+  --nameserver $(shell_quote "$LOKUM_NAMESERVER") \
   --net0 $(shell_quote "$net0") \
   --ostype $(shell_quote "$PROXMOX_CT_OSTYPE") \
   --unprivileged $(shell_quote "$PROXMOX_CT_UNPRIVILEGED") \
