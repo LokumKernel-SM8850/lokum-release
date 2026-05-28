@@ -100,18 +100,16 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-  auto-release:
-    name: Build and publish ${{ matrix.release_id }}
+  auto-release-proxmox:
+    name: Proxmox CT build ${{ matrix.release_id }}
     needs: discover
-    if: ${{ needs.discover.outputs.has_lanes == 'true' }}
-    runs-on: [self-hosted, linux, x64, lokum-sm8850]
+    if: ${{ needs.discover.outputs.has_lanes == 'true' && (github.event_name == 'schedule' || inputs.executor == 'proxmox-ct') }}
+    runs-on: [self-hosted, linux, x64, lokum-proxmox]
     timeout-minutes: 240
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
-    env:
-      LOKUM_EXECUTOR: ${{ inputs.executor || 'proxmox-ct' }}
     steps:
       - name: Checkout release tooling
         uses: actions/checkout@v5
@@ -120,7 +118,7 @@ jobs:
 
       - name: Show selected lane
         run: |
-          echo "Executor: $LOKUM_EXECUTOR"
+          echo "Executor: proxmox-ct"
           echo "Manifest: ${{ matrix.manifest }}"
           echo "Source branch: ${{ matrix.source_branch }}"
           echo "Release id: ${{ matrix.release_id }}"
@@ -128,58 +126,7 @@ jobs:
           echo "KSU changed: ${{ matrix.ksu_changed }}"
           echo "SUSFS changed: ${{ matrix.susfs_changed }}"
 
-      - name: Validate local self-hosted workspace
-        if: ${{ env.LOKUM_EXECUTOR == 'local' }}
-        env:
-          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
-        run: |
-          if [[ -z "${WORKSPACE_ROOT:-}" ]]; then
-            echo "Repository variable LOKUM_WORKSPACE must point to the Android kernel workspace on the self-hosted runner." >&2
-            exit 1
-          fi
-          if [[ ! -x "$WORKSPACE_ROOT/kernel_platform/tools/bazel" ]]; then
-            echo "Kleaf Bazel wrapper not found under LOKUM_WORKSPACE: $WORKSPACE_ROOT" >&2
-            exit 1
-          fi
-          if [[ ! -d "$WORKSPACE_ROOT/kernel_platform/common/.git" ]]; then
-            echo "Kernel common repo not found under LOKUM_WORKSPACE: $WORKSPACE_ROOT" >&2
-            exit 1
-          fi
-
-      - name: Build locally, verify, package, and optionally publish
-        if: ${{ env.LOKUM_EXECUTOR == 'local' }}
-        id: local_release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
-          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
-          SOURCE_BRANCH: ${{ matrix.source_branch }}
-          FORCE_BUILD: "true"
-          UPDATE_KSUNEXT: ${{ inputs.update_ksun }}
-          UPDATE_SUSFS: ${{ inputs.update_susfs }}
-          PUBLISH_RELEASE: ${{ inputs.publish_release }}
-          RELEASE_SUFFIX: ${{ inputs.release_suffix || '' }}
-        run: scripts/ci/auto-release.sh
-
-      - name: Cleanup local runner state
-        if: ${{ always() && env.LOKUM_EXECUTOR == 'local' }}
-        env:
-          MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
-          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
-          AUTO_RELEASE_OUT_ROOT: ${{ steps.local_release.outputs.out_root }}
-          AUTO_RELEASE_PACKAGE_OUT: ${{ steps.local_release.outputs.package_out }}
-          CI_MANIFEST_PATH: ${{ steps.local_release.outputs.ci_manifest }}
-          CLEAN_RELEASE_OUT: ${{ inputs.cleanup_after_run }}
-          CLEAN_TEMP_MANIFESTS: "true"
-          CLEAN_TOOL_CACHE: ${{ inputs.cleanup_caches }}
-          CLEAN_BAZEL_OUTPUT: ${{ inputs.cleanup_caches }}
-          RESET_REPOS: "true"
-          PRUNE_CI_BRANCHES: "true"
-          CLEAN_UNTRACKED_REPO_FILES: "true"
-        run: scripts/ci/cleanup-runner-state.sh
-
       - name: Build inside Proxmox CT, verify, package, and optionally publish
-        if: ${{ env.LOKUM_EXECUTOR == 'proxmox-ct' }}
         id: proxmox_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -208,19 +155,83 @@ jobs:
       - name: Summary
         if: always()
         env:
-          RELEASE_ID: ${{ steps.proxmox_release.outputs.release_id || steps.local_release.outputs.release_id }}
-          PACKAGE_OUT: ${{ steps.proxmox_release.outputs.package_out || steps.local_release.outputs.package_out }}
-          ZIP_NAME: ${{ steps.proxmox_release.outputs.zip_name || steps.local_release.outputs.zip_name }}
-          PUBLISHED: ${{ steps.proxmox_release.outputs.published || steps.local_release.outputs.published }}
+          RELEASE_ID: ${{ steps.proxmox_release.outputs.release_id }}
+          PACKAGE_OUT: ${{ steps.proxmox_release.outputs.package_out }}
+          ZIP_NAME: ${{ steps.proxmox_release.outputs.zip_name }}
+          PUBLISHED: ${{ steps.proxmox_release.outputs.published }}
         run: |
           {
             echo "## LokumKernel auto release"
             echo ""
-            echo "Executor: $LOKUM_EXECUTOR"
+            echo "Executor: proxmox-ct"
             echo "Lane: ${{ matrix.release_id }}"
             echo "Release id: $RELEASE_ID"
             echo "Package dir: $PACKAGE_OUT"
             echo "Zip: $ZIP_NAME"
             echo "Published: $PUBLISHED"
-            echo "Cleanup: Proxmox CT is destroyed by trap; local mode runs cleanup step"
+            echo "Cleanup: Proxmox CT is destroyed by trap"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  auto-release-local:
+    name: Local build ${{ matrix.release_id }}
+    needs: discover
+    if: ${{ needs.discover.outputs.has_lanes == 'true' && github.event_name == 'workflow_dispatch' && inputs.executor == 'local' }}
+    runs-on: [self-hosted, linux, x64, lokum-sm8850]
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Checkout release tooling
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Validate local self-hosted workspace
+        env:
+          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
+        run: |
+          if [[ -z "${WORKSPACE_ROOT:-}" ]]; then
+            echo "Repository variable LOKUM_WORKSPACE must point to the Android kernel workspace on the self-hosted runner." >&2
+            exit 1
+          fi
+          if [[ ! -x "$WORKSPACE_ROOT/kernel_platform/tools/bazel" ]]; then
+            echo "Kleaf Bazel wrapper not found under LOKUM_WORKSPACE: $WORKSPACE_ROOT" >&2
+            exit 1
+          fi
+          if [[ ! -d "$WORKSPACE_ROOT/kernel_platform/common/.git" ]]; then
+            echo "Kernel common repo not found under LOKUM_WORKSPACE: $WORKSPACE_ROOT" >&2
+            exit 1
+          fi
+
+      - name: Build locally, verify, package, and optionally publish
+        id: local_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
+          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
+          SOURCE_BRANCH: ${{ matrix.source_branch }}
+          FORCE_BUILD: "true"
+          UPDATE_KSUNEXT: ${{ inputs.update_ksun }}
+          UPDATE_SUSFS: ${{ inputs.update_susfs }}
+          PUBLISH_RELEASE: ${{ inputs.publish_release }}
+          RELEASE_SUFFIX: ${{ inputs.release_suffix || '' }}
+        run: scripts/ci/auto-release.sh
+
+      - name: Cleanup local runner state
+        if: ${{ always() }}
+        env:
+          MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
+          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
+          AUTO_RELEASE_OUT_ROOT: ${{ steps.local_release.outputs.out_root }}
+          AUTO_RELEASE_PACKAGE_OUT: ${{ steps.local_release.outputs.package_out }}
+          CI_MANIFEST_PATH: ${{ steps.local_release.outputs.ci_manifest }}
+          CLEAN_RELEASE_OUT: ${{ inputs.cleanup_after_run }}
+          CLEAN_TEMP_MANIFESTS: "true"
+          CLEAN_TOOL_CACHE: ${{ inputs.cleanup_caches }}
+          CLEAN_BAZEL_OUTPUT: ${{ inputs.cleanup_caches }}
+          RESET_REPOS: "true"
+          PRUNE_CI_BRANCHES: "true"
+          CLEAN_UNTRACKED_REPO_FILES: "true"
+        run: scripts/ci/cleanup-runner-state.sh

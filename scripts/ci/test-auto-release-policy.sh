@@ -25,6 +25,7 @@ expect_file "$RELEASE_ROOT/scripts/ci/list-release-lanes.sh"
 expect_file "$RELEASE_ROOT/scripts/ci/cleanup-runner-state.sh"
 expect_file "$RELEASE_ROOT/scripts/ci/proxmox-auto-release.sh"
 expect_file "$RELEASE_ROOT/scripts/ci/proxmox-guest-build.sh"
+expect_file "$RELEASE_ROOT/scripts/ci/install-proxmox-runner.sh"
 expect_file "$RELEASE_ROOT/manifests/repo-sm8850-ci.xml"
 expect_text "$workflow" 'id: discover_lanes|id: discover' 'dynamic lane discovery step'
 expect_text "$workflow" 'fromJson\(' 'dynamic matrix from discovery output'
@@ -39,6 +40,8 @@ expect_text "$workflow" 'proxmox-auto-release\.sh' 'Proxmox CT executor step'
 expect_text "$workflow" 'PROXMOX_NODE.*PROXMOX_NODE' 'PROXMOX_NODE Proxmox node default'
 expect_text "$workflow" 'PROXMOX_STORAGE.*PROXMOX_STORAGE' 'PROXMOX_STORAGE Proxmox storage default'
 expect_text "$workflow" 'LOKUM_GIT_TOKEN' 'cross-repository Git write token support'
+expect_text "$workflow" 'lokum-proxmox' 'dedicated Proxmox runner label'
+expect_text "$RELEASE_ROOT/scripts/ci/install-proxmox-runner.sh" 'RUNNER_LABELS.*lokum-proxmox' 'Proxmox runner installer label'
 
 if grep -Eq 'default:[[:space:]]*manifests/' "$workflow"; then
   echo "auto-release workflow still defaults to one static manifest" >&2
