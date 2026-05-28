@@ -1,0 +1,48 @@
+name: LokumKernel public-safe CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lokum-public-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release-tooling:
+    name: Release tooling and public-readiness checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout release tooling
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install audit dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep ruby
+
+      - name: Shell syntax
+        run: find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+
+      - name: Workflow YAML syntax
+        run: |
+          find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print0 \
+            | xargs -0 -n1 ruby -e 'require "yaml"; ARGV.each { |path| YAML.load_file(path); puts "#{path}: ok" }'
+
+      - name: Metadata policy
+        run: scripts/ci/test-metadata-policy.sh
+
+      - name: Public readiness audit
+        run: scripts/ci/public-readiness-audit.sh "$PWD"

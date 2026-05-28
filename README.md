@@ -38,12 +38,10 @@ To package an already-built and verified dist:
 DIST=/path/to/dist scripts/package-anykernel3.sh
 ```
 
-Future remote:
-
-```text
-git@github.com:LokumKernel-SM8850/lokum-release.git
-```
-
 ## CI-assisted releases
 
 See `docs/CI-AUTO-RELEASE.md` for the self-hosted runner workflow that watches KernelSU Next/SUSFS upstreams and publishes verified pre-release artifacts when integration succeeds.
+
+## Public repository safety
+
+This repository is designed to be public-readable while keeping the real kernel build host protected. Pull requests run only lightweight GitHub-hosted checks; the self-hosted kernel build/release workflow is limited to maintainer-controlled schedule and manual dispatch events. See `docs/PUBLIC-REPO-SECURITY.md`.

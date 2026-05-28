@@ -16,7 +16,7 @@ expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309.env" 'KERNEL_COMMON_BRANC
 expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309.env" 'RELEASE_ID="pandora-os3.0.309-lokumkernel-6.12.23-ksun-susfs-rc1"'
 expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309.env" 'RELEASE_ZIP_NAME="LokumKernel-pandora-6.12.23-android16-5-LokumKernel-KSun-SUSFS-AnyKernel3-arm64tools-96m-rc1.zip"'
 expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'KERNEL_COMMON_BRANCH="6.12.38-android16-5-lokumkernel-ksun-susfs-exp1"'
-expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'KERNEL_COMMON_HEAD="1909baed878c2da287974792b08f3f75afaee1c0"'
+expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'KERNEL_COMMON_HEAD="4131670aae805c1f361a1c8bc15dd3e58ad492a7"'
 expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'RELEASE_ID="pandora-os3.0.309-lokumkernel-6.12.38-ksun-susfs-exp1"'
 expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'RELEASE_ZIP_NAME="LokumKernel-pandora-6.12.38-android16-5-LokumKernel-KSun-SUSFS-AnyKernel3-arm64tools-96m-exp1.zip"'
 

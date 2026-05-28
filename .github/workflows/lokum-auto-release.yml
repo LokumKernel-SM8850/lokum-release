@@ -40,6 +40,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 defaults:
   run:
@@ -50,13 +51,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Public repository safety: this job intentionally never runs on pull_request
+  # or pull_request_target. It uses a self-hosted runner attached to the local
+  # kernel workspace, so only maintainer-controlled schedule/workflow_dispatch
+  # events may reach it.
   auto-release:
     name: Build and publish pre-release
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
     runs-on: [self-hosted, linux, x64, lokum-sm8850]
     timeout-minutes: 180
     steps:
       - name: Checkout release tooling
-        uses: actions/checkout@v6
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Show upstream status
         env:
