@@ -14,6 +14,8 @@ cat > "$NOTES" <<NOTES_EOF
 
 - Device: $DEVICE_MARKETING_NAME
 - Codename: $DEVICE_CODENAME
+- Supported codenames: ${SUPPORTED_CODENAMES:-$DEVICE_CODENAME}
+- Runtime tested: ${RUNTIME_TESTED_CODENAMES:-not recorded}
 - Firmware: $FIRMWARE_ID
 - Kernel: $KERNEL_RELEASE
 - Features: ${FEATURE_LABEL:-KSun + SUSFS $SUSFS_VERSION}
@@ -26,6 +28,17 @@ cat > "$NOTES" <<NOTES_EOF
 
 Test the boot image first with \`fastboot boot boot-96m-fastboot-test.img\`. Flash the zip only after boot, display/touch, Wi-Fi/mobile data, KSun root, SUSFS, dmesg, and pstore checks look clean.
 NOTES_EOF
+
+if [[ -n "${STATIC_COMPATIBILITY_NOTE:-}" ]]; then
+  cat >> "$NOTES" <<NOTES_EOF
+
+## Compatibility note
+
+$STATIC_COMPATIBILITY_NOTE
+
+This package is boot-only. It does not replace vendor_boot, dtbo, init_boot, vbmeta, super, or firmware partitions.
+NOTES_EOF
+fi
 
 printf 'Release output ready in %s\n' "$OUT_ROOT"
 printf 'Release notes: %s\n' "$NOTES"

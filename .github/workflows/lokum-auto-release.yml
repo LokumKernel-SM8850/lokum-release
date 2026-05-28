@@ -6,11 +6,11 @@ on:
       manifest:
         description: Release manifest to use
         required: true
-        default: manifests/pandora-os3.0.309-android16-6.12.38-exp.env
+        default: manifests/sm8850-android16-6.12.38-droidspaces-exp.env
       source_branch:
         description: Kernel source branch in LokumKernel-SM8850/android_kernel_xiaomi_sm8850
         required: true
-        default: 6.12.38-android16-5-lokumkernel-ksun-susfs-exp1
+        default: 6.12.38-android16-5-lokumkernel-ksun-susfs-droidspaces-exp1
       force_build:
         description: Build even when tracked KernelSU/SUSFS upstream heads have not changed
         type: boolean
@@ -68,7 +68,7 @@ jobs:
 
       - name: Show upstream status
         env:
-          MANIFEST: ${{ github.workspace }}/${{ inputs.manifest || 'manifests/pandora-os3.0.309-android16-6.12.38-exp.env' }}
+          MANIFEST: ${{ github.workspace }}/${{ inputs.manifest || 'manifests/sm8850-android16-6.12.38-droidspaces-exp.env' }}
           WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE || 'LOKUM_WORKSPACE' }}
         run: scripts/ci/check-upstreams.sh
 
@@ -76,7 +76,7 @@ jobs:
         id: auto_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MANIFEST: ${{ github.workspace }}/${{ inputs.manifest || 'manifests/pandora-os3.0.309-android16-6.12.38-exp.env' }}
+          MANIFEST: ${{ github.workspace }}/${{ inputs.manifest || 'manifests/sm8850-android16-6.12.38-droidspaces-exp.env' }}
           WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE || 'LOKUM_WORKSPACE' }}
           SOURCE_BRANCH: ${{ inputs.source_branch }}
           FORCE_BUILD: ${{ inputs.force_build }}

@@ -31,7 +31,9 @@ if [[ ! -d "$AK3_CACHE/.git" ]]; then
   rm -rf "$AK3_CACHE"
   git clone "$ANYKERNEL3_REPO" "$AK3_CACHE"
 fi
-git -C "$AK3_CACHE" fetch --tags --force --quiet
+if ! git -C "$AK3_CACHE" cat-file -e "$ANYKERNEL3_REF^{commit}" 2>/dev/null; then
+  git -C "$AK3_CACHE" fetch --tags --force --quiet
+fi
 git -C "$AK3_CACHE" checkout --quiet "$ANYKERNEL3_REF"
 
 if [[ ! -f "$MAGISK_APK" ]]; then

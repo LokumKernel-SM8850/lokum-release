@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RELEASE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-MANIFEST="${MANIFEST:-$RELEASE_ROOT/manifests/pandora-os3.0.309.env}"
+MANIFEST="${MANIFEST:-$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-droidspaces-exp.env}"
 
 if [[ ! -f "$MANIFEST" ]]; then
   echo "Manifest not found: $MANIFEST" >&2
@@ -46,4 +46,10 @@ Kernel platform:$KERNEL_PLATFORM
 Dist:           $DIST
 Package out:    $PACKAGE_OUT
 CTX
+  if [[ -n "${SUPPORTED_CODENAMES:-}" ]]; then
+    printf 'Supported:      %s\n' "$SUPPORTED_CODENAMES"
+  fi
+  if [[ -n "${RUNTIME_TESTED_CODENAMES:-}" ]]; then
+    printf 'Runtime tested: %s\n' "$RUNTIME_TESTED_CODENAMES"
+  fi
 }

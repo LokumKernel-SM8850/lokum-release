@@ -1,18 +1,18 @@
 ### AnyKernel3 Ramdisk Mod Script
-## LokumKernel for Xiaomi pandora
+## LokumKernel for Xiaomi SM8850 / Xiaomi 17 series
 ## Based on osm0sis AnyKernel3 template
 
 properties() { '
-kernel.string=LokumKernel 6.12.23-android16-5 for Xiaomi pandora by meto
+kernel.string=LokumKernel SM8850 Android 16 / 6.12 for Xiaomi 17 series by meto
 do.devicecheck=1
 do.modules=0
 do.systemless=1
 do.cleanup=1
 do.cleanuponabort=0
-device.name1=pandora
-device.name2=
-device.name3=
-device.name4=
+device.name1=pudding
+device.name2=pandora
+device.name3=popsicle
+device.name4=nezha
 device.name5=
 supported.versions=16
 supported.patchlevels=

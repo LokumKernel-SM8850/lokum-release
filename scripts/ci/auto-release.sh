@@ -2,7 +2,7 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RELEASE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-MANIFEST="${MANIFEST:-$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env}"
+MANIFEST="${MANIFEST:-$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-droidspaces-exp.env}"
 # shellcheck source=../common.sh
 source "$RELEASE_ROOT/scripts/common.sh"
 
@@ -11,7 +11,7 @@ require_command gh
 require_command python3
 require_command sha256sum
 
-SOURCE_BRANCH="${SOURCE_BRANCH:-${KERNEL_COMMON_BRANCH:-6.12.38-android16-5-lokumkernel-ksun-susfs-exp1}}"
+SOURCE_BRANCH="${SOURCE_BRANCH:-${KERNEL_COMMON_BRANCH:-6.12.38-android16-5-lokumkernel-ksun-susfs-droidspaces-exp1}}"
 PUBLISH_RELEASE="${PUBLISH_RELEASE:-true}"
 FORCE_BUILD="${FORCE_BUILD:-false}"
 UPDATE_KSUNEXT="${UPDATE_KSUNEXT:-true}"
