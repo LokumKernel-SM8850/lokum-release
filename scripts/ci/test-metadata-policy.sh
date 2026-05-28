@@ -19,10 +19,14 @@ expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.23-ksun-susfs-rc1.env
 expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.23-ksun-susfs-rc1.env" 'RUNTIME_TESTED_CODENAMES="pandora"'
 expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.23-ksun-susfs-rc1.env" 'RELEASE_ID="lokumkernel-sm8850-6.12.23-ksun-susfs-rc1"'
 expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.23-ksun-susfs-rc1.env" 'RELEASE_ZIP_NAME="LokumKernel-SM8850-6.12.23-KSun-SUSFS-rc1.zip"'
-expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'KERNEL_COMMON_BRANCH="6.12.38-android16-5-lokumkernel-ksun-susfs-exp1"'
-expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'KERNEL_COMMON_HEAD="4131670aae805c1f361a1c8bc15dd3e58ad492a7"'
-expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'RELEASE_ID="lokumkernel-xiaomi17pro-6.12.38-ksun-susfs-exp1"'
-expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'RELEASE_ZIP_NAME="LokumKernel-Xiaomi17Pro-6.12.38-KSun-SUSFS-exp1.zip"'
+expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-ksun-susfs-exp1.env" 'KERNEL_COMMON_BRANCH="6.12.38-android16-5-lokumkernel-ksun-susfs-exp1"'
+expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-ksun-susfs-exp1.env" 'KERNEL_COMMON_HEAD="4131670aae805c1f361a1c8bc15dd3e58ad492a7"'
+expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-ksun-susfs-exp1.env" 'DEVICE_CODENAME="sm8850"'
+expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-ksun-susfs-exp1.env" 'DEVICE_MARKETING_NAME="Xiaomi 17 Series"'
+expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-ksun-susfs-exp1.env" 'SUPPORTED_CODENAMES="pudding pandora popsicle nezha"'
+expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-ksun-susfs-exp1.env" 'RUNTIME_TESTED_CODENAMES="pandora"'
+expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-ksun-susfs-exp1.env" 'RELEASE_ID="lokumkernel-sm8850-6.12.38-ksun-susfs-exp1"'
+expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-ksun-susfs-exp1.env" 'RELEASE_ZIP_NAME="LokumKernel-SM8850-6.12.38-KSun-SUSFS-exp1.zip"'
 expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-droidspaces-exp.env" 'KERNEL_RELEASE="6.12.38-android16-5-LokumKernel-Droidspaces"'
 expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-droidspaces-exp.env" 'KERNEL_COMMON_BRANCH="6.12.38-android16-5-lokumkernel-ksun-susfs-droidspaces-exp1"'
 expect_line "$RELEASE_ROOT/manifests/sm8850-android16-6.12.38-droidspaces-exp.env" 'KERNEL_COMMON_HEAD="a71ebf3075382bd5b083ab332d756a758e97a3c4"'
@@ -40,8 +44,14 @@ expect_line "$RELEASE_ROOT/templates/anykernel/anykernel.sh.in" 'device.name2=pa
 expect_line "$RELEASE_ROOT/templates/anykernel/anykernel.sh.in" 'device.name3=popsicle'
 expect_line "$RELEASE_ROOT/templates/anykernel/anykernel.sh.in" 'device.name4=nezha'
 expect_line "$RELEASE_ROOT/templates/anykernel/anykernel.sh.in" 'device.name5='
+expect_line "$RELEASE_ROOT/templates/anykernel/anykernel.sh.in" 'kernel.string=Lokum Kernel Xiaomi 17 series by MetoisTaken'
 
-if rg -n 'ksunext|KernelSUNext|pandora-6\.12\.23-ksun|android16-6\.12-2025-09-ksun|pandora-os3\.0\.309-lokumkernel|LokumKernel-pandora|lokumkernel-xiaomi17pro-6\.12\.23-ksun-susfs|LokumKernel-Xiaomi17Pro-6\.12\.23|pandora-os3\.0\.309-android16-6\.12\.38-droidspaces|lokumkernel-xiaomi17pro-6\.12\.38-ksun-susfs-droidspaces|LokumKernel-Xiaomi17Pro-6\.12\.38-KSun-SUSFS-Droidspaces' \
+if [[ -e "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" ]]; then
+  echo "old pandora-only 6.12.38 manifest must be replaced by the common SM8850 manifest" >&2
+  fail=1
+fi
+
+if rg -n 'ksunext|KernelSUNext|pandora-6\.12\.23-ksun|android16-6\.12-2025-09-ksun|pandora-os3\.0\.309-lokumkernel|LokumKernel-pandora|lokumkernel-xiaomi17pro-6\.12\.23-ksun-susfs|LokumKernel-Xiaomi17Pro-6\.12\.23|pandora-os3\.0\.309-android16-6\.12\.38|lokumkernel-xiaomi17pro-6\.12\.38|LokumKernel-Xiaomi17Pro-6\.12\.38' \
   "$RELEASE_ROOT/manifests" "$RELEASE_ROOT/docs" >/tmp/lokum-old-metadata-names.txt; then
   echo "old naming still present:" >&2
   cat /tmp/lokum-old-metadata-names.txt >&2
