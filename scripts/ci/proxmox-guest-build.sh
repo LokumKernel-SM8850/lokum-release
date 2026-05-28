@@ -30,6 +30,14 @@ require_command() {
   fi
 }
 
+configure_network_defaults() {
+  if [[ -n "${LOKUM_NAMESERVER:-1.1.1.1}" ]]; then
+    printf 'nameserver %s\n' "${LOKUM_NAMESERVER:-1.1.1.1}" > /etc/resolv.conf
+  fi
+  grep -q '^precedence ::ffff:0:0/96  100$' /etc/gai.conf 2>/dev/null \
+    || printf '\nprecedence ::ffff:0:0/96  100\n' >> /etc/gai.conf
+}
+
 apt_install_base() {
   export DEBIAN_FRONTEND=noninteractive
   apt-get update
@@ -45,7 +53,7 @@ install_repo_tool() {
   if apt-get install -y --no-install-recommends repo; then
     return 0
   fi
-  curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo -o /usr/local/bin/repo
+  curl -4 --retry 5 --retry-delay 2 --connect-timeout 20 -fsSL https://storage.googleapis.com/git-repo-downloads/repo -o /usr/local/bin/repo
   chmod 755 /usr/local/bin/repo
 }
 
@@ -57,7 +65,7 @@ install_github_cli() {
     return 0
   fi
   install -d -m 0755 /etc/apt/keyrings
-  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+  curl -4 --retry 5 --retry-delay 2 --connect-timeout 20 -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     -o /etc/apt/keyrings/githubcli-archive-keyring.gpg
   chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
   arch="$(dpkg --print-architecture)"
@@ -143,6 +151,7 @@ run_release_lane() {
   "$release_dir/scripts/ci/auto-release.sh"
 }
 
+configure_network_defaults
 apt_install_base
 install_repo_tool
 install_github_cli

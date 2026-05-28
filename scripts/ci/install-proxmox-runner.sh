@@ -84,6 +84,7 @@ RUNNER_NAME="${RUNNER_NAME:-${PROXMOX_NODE}-lokum-proxmox}"
 RUNNER_LABELS="${RUNNER_LABELS:-lokum-proxmox}"
 RUNNER_WORKDIR="${RUNNER_WORKDIR:-_work}"
 RUNNER_REPLACE="${RUNNER_REPLACE:-true}"
+LOKUM_NAMESERVER="${LOKUM_NAMESERVER:-1.1.1.1}"
 REPO_URL="https://github.com/${REPOSITORY_FULL_NAME}"
 
 tmp_dir="$(mktemp -d)"
@@ -142,6 +143,7 @@ RUNNER_NAME=$(shell_quote "$RUNNER_NAME")
 RUNNER_LABELS=$(shell_quote "$RUNNER_LABELS")
 RUNNER_WORKDIR=$(shell_quote "$RUNNER_WORKDIR")
 RUNNER_REPLACE=$(shell_quote "$RUNNER_REPLACE")
+LOKUM_NAMESERVER=$(shell_quote "$LOKUM_NAMESERVER")
 EOF_ENV
 
 cat > "$tmp_dir/install-runner-inside-ct.sh" <<'EOF_INNER'
@@ -151,6 +153,11 @@ ENV_FILE="/root/lokum-runner.env"
 # shellcheck source=/dev/null
 source "$ENV_FILE"
 export DEBIAN_FRONTEND=noninteractive
+if [[ -n "${LOKUM_NAMESERVER:-}" ]]; then
+  printf 'nameserver %s\n' "$LOKUM_NAMESERVER" > /etc/resolv.conf
+fi
+grep -q '^precedence ::ffff:0:0/96  100$' /etc/gai.conf 2>/dev/null \
+  || printf '\nprecedence ::ffff:0:0/96  100\n' >> /etc/gai.conf
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates curl git jq openssh-client sudo tar gzip
 if ! id actions >/dev/null 2>&1; then
@@ -159,7 +166,8 @@ fi
 install -d -o actions -g actions /opt/actions-runner
 cd /opt/actions-runner
 if [[ ! -x ./config.sh ]]; then
-  tag="$(curl -fsSL https://api.github.com/repos/actions/runner/releases/latest | jq -r .tag_name)"
+  curl_cmd=(curl -4 --retry 5 --retry-delay 2 --connect-timeout 20 -fsSL)
+  tag="$("${curl_cmd[@]}" https://api.github.com/repos/actions/runner/releases/latest | jq -r .tag_name)"
   version="${tag#v}"
   arch="x64"
   case "$(uname -m)" in
@@ -167,7 +175,7 @@ if [[ ! -x ./config.sh ]]; then
     aarch64|arm64) arch="arm64" ;;
     *) echo "Unsupported runner architecture: $(uname -m)" >&2; exit 1 ;;
   esac
-  curl -fsSLO "https://github.com/actions/runner/releases/download/${tag}/actions-runner-linux-${arch}-${version}.tar.gz"
+  "${curl_cmd[@]}" -O "https://github.com/actions/runner/releases/download/${tag}/actions-runner-linux-${arch}-${version}.tar.gz"
   tar xzf "actions-runner-linux-${arch}-${version}.tar.gz"
   rm -f "actions-runner-linux-${arch}-${version}.tar.gz"
   chown -R actions:actions /opt/actions-runner
