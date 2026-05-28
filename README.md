@@ -20,7 +20,6 @@ scripts/package-anykernel3.sh AnyKernel3 zip packager with arm64 Magisk tools
 scripts/release.sh            build + verify + package + release notes
 scripts/ci/                   guarded self-hosted auto-build/pre-release helpers
 .github/workflows/            GitHub Actions workflow for CI-assisted releases
-docs/                         compatibility, flashing, testing, update, GitHub setup docs
 out/                          ignored generated artifacts
 ```
 
@@ -46,8 +45,8 @@ DIST=/path/to/dist scripts/package-anykernel3.sh
 
 ## CI-assisted releases
 
-See `docs/CI-AUTO-RELEASE.md` for the self-hosted runner workflow that watches KernelSU Next/SUSFS upstreams and publishes verified pre-release artifacts when integration succeeds.
+The public CI path runs metadata and safety checks. Kernel builds are only published from maintainer-controlled runs.
 
 ## Public repository safety
 
-This repository is designed to be public-readable while keeping the real kernel build host protected. Pull requests run only lightweight GitHub-hosted checks; the self-hosted kernel build/release workflow is limited to maintainer-controlled schedule and manual dispatch events. See `docs/PUBLIC-REPO-SECURITY.md`.
+Generated images, zips, firmware dumps, private keys, tokens, and local cache files must stay out of Git. Release artifacts belong in GitHub Releases after verification.

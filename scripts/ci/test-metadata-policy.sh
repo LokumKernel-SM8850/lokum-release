@@ -46,13 +46,21 @@ expect_line "$RELEASE_ROOT/templates/anykernel/anykernel.sh.in" 'device.name4=ne
 expect_line "$RELEASE_ROOT/templates/anykernel/anykernel.sh.in" 'device.name5='
 expect_line "$RELEASE_ROOT/templates/anykernel/anykernel.sh.in" 'kernel.string=Lokum Kernel Xiaomi 17 series by MetoisTaken'
 
+if [[ -d "$RELEASE_ROOT/docs" ]]; then
+  echo "unexpected docs directory; keep the release repository surface minimal" >&2
+  fail=1
+fi
+
 if [[ -e "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" ]]; then
   echo "old pandora-only 6.12.38 manifest must be replaced by the common SM8850 manifest" >&2
   fail=1
 fi
 
+metadata_scan_paths=("$RELEASE_ROOT/manifests")
+[[ -d "$RELEASE_ROOT/docs" ]] && metadata_scan_paths+=("$RELEASE_ROOT/docs")
+
 if rg -n 'ksunext|KernelSUNext|pandora-6\.12\.23-ksun|android16-6\.12-2025-09-ksun|pandora-os3\.0\.309-lokumkernel|LokumKernel-pandora|lokumkernel-xiaomi17pro-6\.12\.23-ksun-susfs|LokumKernel-Xiaomi17Pro-6\.12\.23|pandora-os3\.0\.309-android16-6\.12\.38|lokumkernel-xiaomi17pro-6\.12\.38|LokumKernel-Xiaomi17Pro-6\.12\.38' \
-  "$RELEASE_ROOT/manifests" "$RELEASE_ROOT/docs" >/tmp/lokum-old-metadata-names.txt; then
+  "${metadata_scan_paths[@]}" >/tmp/lokum-old-metadata-names.txt; then
   echo "old naming still present:" >&2
   cat /tmp/lokum-old-metadata-names.txt >&2
   fail=1
