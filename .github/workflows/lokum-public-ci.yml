@@ -44,5 +44,8 @@ jobs:
       - name: Metadata policy
         run: scripts/ci/test-metadata-policy.sh
 
+      - name: Auto-release policy
+        run: scripts/ci/test-auto-release-policy.sh
+
       - name: Public readiness audit
         run: scripts/ci/public-readiness-audit.sh "$PWD"

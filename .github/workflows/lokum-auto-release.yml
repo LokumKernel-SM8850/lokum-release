@@ -3,19 +3,15 @@ name: LokumKernel auto build/release
 on:
   workflow_dispatch:
     inputs:
-      manifest:
-        description: Release manifest to use
+      lanes:
+        description: "changed, all, or comma-separated manifest/release ids"
         required: true
-        default: manifests/sm8850-android16-6.12.38-droidspaces-exp.env
-      source_branch:
-        description: Kernel source branch in LokumKernel-SM8850/android_kernel_xiaomi_sm8850
-        required: true
-        default: 6.12.38-android16-5-lokumkernel-ksun-susfs-droidspaces-exp1
+        default: changed
       force_build:
-        description: Build even when tracked KernelSU/SUSFS upstream heads have not changed
+        description: Build selected lanes even when tracked upstream heads have not changed
         type: boolean
         required: true
-        default: true
+        default: false
       update_ksun:
         description: Try to replay the Lokum KernelSU/SUSFS integration on latest KernelSU Next dev
         type: boolean
@@ -31,8 +27,18 @@ on:
         type: boolean
         required: true
         default: true
+      cleanup_after_run:
+        description: Remove generated output and reset CI-mutated repos after each lane
+        type: boolean
+        required: true
+        default: true
+      cleanup_caches:
+        description: Also remove downloaded tool/cache files and Bazel cache after the lane
+        type: boolean
+        required: true
+        default: false
       release_suffix:
-        description: Optional suffix for the generated release id; leave empty for timestamp
+        description: Optional suffix for generated release ids; leave empty for timestamp
         required: false
         default: ""
   schedule:
@@ -51,40 +57,113 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Public repository safety: this job intentionally never runs on pull_request
-  # or pull_request_target. It uses a self-hosted runner attached to the local
-  # kernel workspace, so only maintainer-controlled schedule/workflow_dispatch
-  # events may reach it.
-  auto-release:
-    name: Build and publish pre-release
+  discover:
+    name: Discover release lanes
     if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
-    runs-on: [self-hosted, linux, x64, lokum-sm8850]
-    timeout-minutes: 180
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.discover_lanes.outputs.matrix }}
+      has_lanes: ${{ steps.discover_lanes.outputs.has_lanes }}
+      count: ${{ steps.discover_lanes.outputs.count }}
     steps:
       - name: Checkout release tooling
         uses: actions/checkout@v5
         with:
           persist-credentials: false
 
-      - name: Show upstream status
+      - name: Discover lanes from manifests
+        id: discover_lanes
         env:
-          MANIFEST: ${{ github.workspace }}/${{ inputs.manifest || 'manifests/sm8850-android16-6.12.38-droidspaces-exp.env' }}
-          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE || 'LOKUM_WORKSPACE' }}
-        run: scripts/ci/check-upstreams.sh
+          LANES: ${{ inputs.lanes || 'changed' }}
+          FORCE_BUILD: ${{ inputs.force_build }}
+          UPDATE_KSUNEXT: ${{ inputs.update_ksun }}
+          UPDATE_SUSFS: ${{ inputs.update_susfs }}
+        run: scripts/ci/list-release-lanes.sh
+
+      - name: Summary
+        run: |
+          {
+            echo "## LokumKernel lane discovery"
+            echo ""
+            echo "Selected lanes: ${{ steps.discover_lanes.outputs.count }}"
+            echo '```json'
+            echo '${{ steps.discover_lanes.outputs.matrix }}'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  auto-release:
+    name: Build and publish ${{ matrix.release_id }}
+    needs: discover
+    if: ${{ needs.discover.outputs.has_lanes == 'true' }}
+    runs-on: [self-hosted, linux, x64, lokum-sm8850]
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Checkout release tooling
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Show selected lane
+        run: |
+          echo "Manifest: ${{ matrix.manifest }}"
+          echo "Source branch: ${{ matrix.source_branch }}"
+          echo "Release id: ${{ matrix.release_id }}"
+          echo "Kernel: ${{ matrix.kernel_release }}"
+          echo "KSU changed: ${{ matrix.ksu_changed }}"
+          echo "SUSFS changed: ${{ matrix.susfs_changed }}"
+
+      - name: Validate self-hosted workspace
+        env:
+          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
+        run: |
+          if [[ -z "${WORKSPACE_ROOT:-}" ]]; then
+            echo "Repository variable LOKUM_WORKSPACE must point to the Android kernel workspace on the self-hosted runner." >&2
+            exit 1
+          fi
+          if [[ ! -x "$WORKSPACE_ROOT/kernel_platform/tools/bazel" ]]; then
+            echo "Kleaf Bazel wrapper not found under LOKUM_WORKSPACE: $WORKSPACE_ROOT" >&2
+            exit 1
+          fi
+          if [[ ! -d "$WORKSPACE_ROOT/kernel_platform/common/.git" ]]; then
+            echo "Kernel common repo not found under LOKUM_WORKSPACE: $WORKSPACE_ROOT" >&2
+            exit 1
+          fi
 
       - name: Build, verify, package, and optionally publish
         id: auto_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MANIFEST: ${{ github.workspace }}/${{ inputs.manifest || 'manifests/sm8850-android16-6.12.38-droidspaces-exp.env' }}
-          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE || 'LOKUM_WORKSPACE' }}
-          SOURCE_BRANCH: ${{ inputs.source_branch }}
-          FORCE_BUILD: ${{ inputs.force_build }}
+          MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
+          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
+          SOURCE_BRANCH: ${{ matrix.source_branch }}
+          FORCE_BUILD: "true"
           UPDATE_KSUNEXT: ${{ inputs.update_ksun }}
           UPDATE_SUSFS: ${{ inputs.update_susfs }}
           PUBLISH_RELEASE: ${{ inputs.publish_release }}
-          RELEASE_SUFFIX: ${{ inputs.release_suffix }}
+          RELEASE_SUFFIX: ${{ inputs.release_suffix || '' }}
         run: scripts/ci/auto-release.sh
+
+      - name: Cleanup runner state
+        if: ${{ always() }}
+        env:
+          MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
+          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
+          AUTO_RELEASE_OUT_ROOT: ${{ steps.auto_release.outputs.out_root }}
+          AUTO_RELEASE_PACKAGE_OUT: ${{ steps.auto_release.outputs.package_out }}
+          CI_MANIFEST_PATH: ${{ steps.auto_release.outputs.ci_manifest }}
+          CLEAN_RELEASE_OUT: ${{ inputs.cleanup_after_run }}
+          CLEAN_TEMP_MANIFESTS: "true"
+          CLEAN_TOOL_CACHE: ${{ inputs.cleanup_caches }}
+          CLEAN_BAZEL_OUTPUT: ${{ inputs.cleanup_caches }}
+          RESET_REPOS: "true"
+          PRUNE_CI_BRANCHES: "true"
+          CLEAN_UNTRACKED_REPO_FILES: "true"
+        run: scripts/ci/cleanup-runner-state.sh
 
       - name: Summary
         if: always()
@@ -92,7 +171,10 @@ jobs:
           {
             echo "## LokumKernel auto release"
             echo ""
+            echo "Lane: ${{ matrix.release_id }}"
             echo "Release id: ${{ steps.auto_release.outputs.release_id }}"
             echo "Package dir: ${{ steps.auto_release.outputs.package_out }}"
             echo "Zip: ${{ steps.auto_release.outputs.zip_name }}"
+            echo "Published: ${{ steps.auto_release.outputs.published }}"
+            echo "Cleanup step: always"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -201,10 +201,11 @@ if bool_true "$PUBLISH_RELEASE"; then
     echo "Release already exists: $ci_release_id" >&2
     exit 1
   fi
+  release_title="${RELEASE_TITLE:-LokumKernel ${KERNEL_BASE}} auto ${RELEASE_SUFFIX}"
   gh release create "$ci_release_id" \
     --repo LokumKernel-SM8850/lokum-release \
     --target main \
-    --title "LokumKernel SM8850 auto ${KERNEL_RELEASE} KernelSU Next + SUSFS" \
+    --title "$release_title" \
     --notes-file "$notes" \
     --prerelease \
     "$package_out/$ci_zip_name" \
@@ -216,8 +217,10 @@ fi
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   {
     echo "release_id=$ci_release_id"
+    echo "out_root=$out_root"
     echo "package_out=$package_out"
     echo "zip_name=$ci_zip_name"
+    echo "ci_manifest=$ci_manifest"
     echo "published=$PUBLISH_RELEASE"
   } >> "$GITHUB_OUTPUT"
 fi
