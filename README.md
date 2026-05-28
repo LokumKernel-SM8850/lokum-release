@@ -1,6 +1,6 @@
 # LokumKernel_SM8850 Release Tools
 
-This repository is the release/orchestration layer for LokumKernel on Xiaomi SM8850 Pandora-class devices.
+This repository is the release/orchestration layer for LokumKernel on Xiaomi 17 Pro (pandora / SM8850).
 
 It does **not** store generated boot images, stock firmware images, downloaded APKs, or flashable zip artifacts in Git. Those belong in `out/` locally and in GitHub Releases after tagging.
 

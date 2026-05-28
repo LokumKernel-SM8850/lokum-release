@@ -10,26 +10,21 @@ source "$SCRIPT_DIR/common.sh"
 NOTES="$OUT_ROOT/release-notes.md"
 mkdir -p "$OUT_ROOT"
 cat > "$NOTES" <<NOTES_EOF
-# $PROJECT_NAME $RELEASE_ID
+# LokumKernel $KERNEL_BASE ${RELEASE_ID##*-}
 
-Device: $DEVICE_CODENAME
-Firmware base: $FIRMWARE_ID / Android $ANDROID_VERSION
-Kernel release: $KERNEL_RELEASE
-KernelSU Next: $KERNELSU_NEXT_HEAD
-SUSFS: $SUSFS_VERSION ($SUSFS_SOURCE_HEAD)
-Boot image size: $BOOT_IMAGE_SIZE bytes
+- Device: $DEVICE_MARKETING_NAME
+- Codename: $DEVICE_CODENAME
+- Firmware: $FIRMWARE_ID
+- Kernel: $KERNEL_RELEASE
+- Root: KSun + SUSFS $SUSFS_VERSION
 
-## Artifacts
+## Files
 
-- $RELEASE_ZIP_NAME — preferred AnyKernel3 permanent install package
-- boot-96m-fastboot-test.img — raw fastboot boot test image
-- SHA256SUMS — artifact checksums
+- $RELEASE_ZIP_NAME — flashable AnyKernel3 zip
+- boot-96m-fastboot-test.img — fastboot test image
+- SHA256SUMS — checksums
 
-## Required test gate
-
-1. Test raw image first: \`fastboot boot boot-96m-fastboot-test.img\`.
-2. Verify boot complete, touch/display, Wi-Fi, mobile data, KernelSU root, SUSFS version/features, dmesg, and pstore.
-3. Only after runtime validation, flash the AnyKernel3 zip through KernelFlasher/recovery.
+Test the boot image first with \`fastboot boot boot-96m-fastboot-test.img\`. Flash the zip only after boot, display/touch, Wi-Fi/mobile data, KSun root, SUSFS, dmesg, and pstore checks look clean.
 NOTES_EOF
 
 printf 'Release output ready in %s\n' "$OUT_ROOT"
