@@ -23,13 +23,22 @@ expect_text() {
 
 expect_file "$RELEASE_ROOT/scripts/ci/list-release-lanes.sh"
 expect_file "$RELEASE_ROOT/scripts/ci/cleanup-runner-state.sh"
+expect_file "$RELEASE_ROOT/scripts/ci/proxmox-auto-release.sh"
+expect_file "$RELEASE_ROOT/scripts/ci/proxmox-guest-build.sh"
+expect_file "$RELEASE_ROOT/manifests/repo-sm8850-ci.xml"
 expect_text "$workflow" 'id: discover_lanes|id: discover' 'dynamic lane discovery step'
 expect_text "$workflow" 'fromJson\(' 'dynamic matrix from discovery output'
 expect_text "$workflow" 'max-parallel:[[:space:]]*1' 'single-workspace matrix serialization'
 expect_text "$workflow" 'cleanup-runner-state\.sh' 'always-on runner cleanup step'
-expect_text "$workflow" 'if:[[:space:]]*\$\{\{ always\(\) \}\}' 'cleanup runs even after failures'
+expect_text "$workflow" 'if:[[:space:]]*\$\{\{ always\(\)' 'cleanup runs even after failures'
 expect_text "$workflow" 'lanes:' 'workflow_dispatch lanes input'
 expect_text "$workflow" 'cleanup_after_run:' 'workflow_dispatch cleanup toggle'
+expect_text "$workflow" 'executor:' 'executor selector input'
+expect_text "$workflow" 'default:[[:space:]]*proxmox-ct' 'Proxmox CT default executor'
+expect_text "$workflow" 'proxmox-auto-release\.sh' 'Proxmox CT executor step'
+expect_text "$workflow" 'PROXMOX_NODE.*PROXMOX_NODE' 'PROXMOX_NODE Proxmox node default'
+expect_text "$workflow" 'PROXMOX_STORAGE.*PROXMOX_STORAGE' 'PROXMOX_STORAGE Proxmox storage default'
+expect_text "$workflow" 'LOKUM_GIT_TOKEN' 'cross-repository Git write token support'
 
 if grep -Eq 'default:[[:space:]]*manifests/' "$workflow"; then
   echo "auto-release workflow still defaults to one static manifest" >&2
@@ -44,6 +53,25 @@ if grep -Eq '/media/|/home/|LOCAL_BUILD_ROOT' "$workflow"; then
   fail=1
 fi
 expect_text "$workflow" 'LOKUM_WORKSPACE must point' 'self-hosted workspace validation'
+
+if grep -Eq 'file://|pandora-local' "$RELEASE_ROOT/manifests/repo-sm8850-ci.xml"; then
+  echo "CI repo manifest must be usable by ephemeral CTs and must not reference local file remotes" >&2
+  fail=1
+fi
+if ! python3 - "$RELEASE_ROOT/manifests/repo-sm8850-ci.xml" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+root = ET.parse(sys.argv[1]).getroot()
+projects = {p.get("path"): p for p in root.findall("project")}
+assert projects["kernel_platform/common"].get("remote") == "lokum-github"
+assert projects["kernel_platform/common"].get("name") == "android_kernel_xiaomi_sm8850.git"
+assert projects["kernel_platform/soc-repo"].get("remote") == "clo-la"
+assert projects["kernel_platform/prebuilts/rust"].get("remote") == "clo-la"
+PY
+then
+  echo "CI repo manifest does not point critical projects at network remotes" >&2
+  fail=1
+fi
 
 matrix_json="$(LANES=all FORCE_BUILD=true LOKUM_LIST_RELEASE_LANES_OFFLINE=true "$RELEASE_ROOT/scripts/ci/list-release-lanes.sh" 2>/tmp/lokum-list-lanes-test.err || true)"
 if [[ -z "$matrix_json" ]]; then

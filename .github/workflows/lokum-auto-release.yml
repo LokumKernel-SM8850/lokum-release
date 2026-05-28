@@ -3,6 +3,14 @@ name: LokumKernel auto build/release
 on:
   workflow_dispatch:
     inputs:
+      executor:
+        description: Where the lane build runs
+        type: choice
+        required: true
+        default: proxmox-ct
+        options:
+          - proxmox-ct
+          - local
       lanes:
         description: "changed, all, or comma-separated manifest/release ids"
         required: true
@@ -97,11 +105,13 @@ jobs:
     needs: discover
     if: ${{ needs.discover.outputs.has_lanes == 'true' }}
     runs-on: [self-hosted, linux, x64, lokum-sm8850]
-    timeout-minutes: 180
+    timeout-minutes: 240
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    env:
+      LOKUM_EXECUTOR: ${{ inputs.executor || 'proxmox-ct' }}
     steps:
       - name: Checkout release tooling
         uses: actions/checkout@v5
@@ -110,6 +120,7 @@ jobs:
 
       - name: Show selected lane
         run: |
+          echo "Executor: $LOKUM_EXECUTOR"
           echo "Manifest: ${{ matrix.manifest }}"
           echo "Source branch: ${{ matrix.source_branch }}"
           echo "Release id: ${{ matrix.release_id }}"
@@ -117,7 +128,8 @@ jobs:
           echo "KSU changed: ${{ matrix.ksu_changed }}"
           echo "SUSFS changed: ${{ matrix.susfs_changed }}"
 
-      - name: Validate self-hosted workspace
+      - name: Validate local self-hosted workspace
+        if: ${{ env.LOKUM_EXECUTOR == 'local' }}
         env:
           WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
         run: |
@@ -134,8 +146,9 @@ jobs:
             exit 1
           fi
 
-      - name: Build, verify, package, and optionally publish
-        id: auto_release
+      - name: Build locally, verify, package, and optionally publish
+        if: ${{ env.LOKUM_EXECUTOR == 'local' }}
+        id: local_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
@@ -148,14 +161,14 @@ jobs:
           RELEASE_SUFFIX: ${{ inputs.release_suffix || '' }}
         run: scripts/ci/auto-release.sh
 
-      - name: Cleanup runner state
-        if: ${{ always() }}
+      - name: Cleanup local runner state
+        if: ${{ always() && env.LOKUM_EXECUTOR == 'local' }}
         env:
           MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
           WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
-          AUTO_RELEASE_OUT_ROOT: ${{ steps.auto_release.outputs.out_root }}
-          AUTO_RELEASE_PACKAGE_OUT: ${{ steps.auto_release.outputs.package_out }}
-          CI_MANIFEST_PATH: ${{ steps.auto_release.outputs.ci_manifest }}
+          AUTO_RELEASE_OUT_ROOT: ${{ steps.local_release.outputs.out_root }}
+          AUTO_RELEASE_PACKAGE_OUT: ${{ steps.local_release.outputs.package_out }}
+          CI_MANIFEST_PATH: ${{ steps.local_release.outputs.ci_manifest }}
           CLEAN_RELEASE_OUT: ${{ inputs.cleanup_after_run }}
           CLEAN_TEMP_MANIFESTS: "true"
           CLEAN_TOOL_CACHE: ${{ inputs.cleanup_caches }}
@@ -165,16 +178,49 @@ jobs:
           CLEAN_UNTRACKED_REPO_FILES: "true"
         run: scripts/ci/cleanup-runner-state.sh
 
+      - name: Build inside Proxmox CT, verify, package, and optionally publish
+        if: ${{ env.LOKUM_EXECUTOR == 'proxmox-ct' }}
+        id: proxmox_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOKUM_CI_SSH_PRIVATE_KEY: ${{ secrets.LOKUM_CI_SSH_PRIVATE_KEY }}
+          LOKUM_GIT_TOKEN: ${{ secrets.LOKUM_GIT_TOKEN }}
+          PROXMOX_SSH_TARGET: ${{ secrets.PROXMOX_SSH_TARGET || vars.PROXMOX_SSH_TARGET }}
+          PROXMOX_SSH_PRIVATE_KEY: ${{ secrets.PROXMOX_SSH_PRIVATE_KEY }}
+          PROXMOX_NODE: ${{ vars.PROXMOX_NODE || 'PROXMOX_NODE' }}
+          PROXMOX_STORAGE: ${{ vars.PROXMOX_STORAGE || 'PROXMOX_STORAGE' }}
+          PROXMOX_CT_TEMPLATE: ${{ vars.PROXMOX_CT_TEMPLATE }}
+          PROXMOX_CT_BRIDGE: ${{ vars.PROXMOX_CT_BRIDGE || 'vmbr0' }}
+          PROXMOX_CT_DISK_GB: ${{ vars.PROXMOX_CT_DISK_GB || '120' }}
+          PROXMOX_CT_CORES: ${{ vars.PROXMOX_CT_CORES || '12' }}
+          PROXMOX_CT_MEMORY_MB: ${{ vars.PROXMOX_CT_MEMORY_MB || '24576' }}
+          PROXMOX_CT_SWAP_MB: ${{ vars.PROXMOX_CT_SWAP_MB || '4096' }}
+          SYNC_JOBS: ${{ vars.LOKUM_REPO_SYNC_JOBS || '12' }}
+          MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
+          SOURCE_BRANCH: ${{ matrix.source_branch }}
+          FORCE_BUILD: "true"
+          UPDATE_KSUNEXT: ${{ inputs.update_ksun }}
+          UPDATE_SUSFS: ${{ inputs.update_susfs }}
+          PUBLISH_RELEASE: ${{ inputs.publish_release }}
+          RELEASE_SUFFIX: ${{ inputs.release_suffix || '' }}
+        run: scripts/ci/proxmox-auto-release.sh
+
       - name: Summary
         if: always()
+        env:
+          RELEASE_ID: ${{ steps.proxmox_release.outputs.release_id || steps.local_release.outputs.release_id }}
+          PACKAGE_OUT: ${{ steps.proxmox_release.outputs.package_out || steps.local_release.outputs.package_out }}
+          ZIP_NAME: ${{ steps.proxmox_release.outputs.zip_name || steps.local_release.outputs.zip_name }}
+          PUBLISHED: ${{ steps.proxmox_release.outputs.published || steps.local_release.outputs.published }}
         run: |
           {
             echo "## LokumKernel auto release"
             echo ""
+            echo "Executor: $LOKUM_EXECUTOR"
             echo "Lane: ${{ matrix.release_id }}"
-            echo "Release id: ${{ steps.auto_release.outputs.release_id }}"
-            echo "Package dir: ${{ steps.auto_release.outputs.package_out }}"
-            echo "Zip: ${{ steps.auto_release.outputs.zip_name }}"
-            echo "Published: ${{ steps.auto_release.outputs.published }}"
-            echo "Cleanup step: always"
+            echo "Release id: $RELEASE_ID"
+            echo "Package dir: $PACKAGE_OUT"
+            echo "Zip: $ZIP_NAME"
+            echo "Published: $PUBLISHED"
+            echo "Cleanup: Proxmox CT is destroyed by trap; local mode runs cleanup step"
           } >> "$GITHUB_STEP_SUMMARY"
