@@ -37,11 +37,28 @@ expect_text "$workflow" 'cleanup_after_run:' 'workflow_dispatch cleanup toggle'
 expect_text "$workflow" 'executor:' 'executor selector input'
 expect_text "$workflow" 'default:[[:space:]]*proxmox-ct' 'Proxmox CT default executor'
 expect_text "$workflow" 'proxmox-auto-release\.sh' 'Proxmox CT executor step'
-expect_text "$workflow" 'PROXMOX_NODE.*PROXMOX_NODE' 'PROXMOX_NODE Proxmox node default'
-expect_text "$workflow" 'PROXMOX_STORAGE.*PROXMOX_STORAGE' 'PROXMOX_STORAGE Proxmox storage default'
+expect_text "$workflow" 'secrets\.PROXMOX_NODE' 'secret-backed Proxmox node setting'
+expect_text "$workflow" 'secrets\.PROXMOX_STORAGE' 'secret-backed Proxmox storage setting'
+expect_text "$workflow" 'secrets\.PROXMOX_SSH_TARGET' 'secret-backed Proxmox SSH target setting'
+expect_text "$workflow" 'secrets\.LOKUM_WORKSPACE' 'secret-backed local workspace setting'
 expect_text "$workflow" 'LOKUM_GIT_TOKEN' 'cross-repository Git write token support'
 expect_text "$workflow" 'lokum-proxmox' 'dedicated Proxmox runner label'
 expect_text "$RELEASE_ROOT/scripts/ci/install-proxmox-runner.sh" 'RUNNER_LABELS.*lokum-proxmox' 'Proxmox runner installer label'
+
+
+if grep -Eq 'vars\.(LOKUM_WORKSPACE|PROXMOX_SSH_TARGET|PROXMOX_NODE|PROXMOX_STORAGE|PROXMOX_CT_TEMPLATE|PROXMOX_CT_BRIDGE)' "$workflow"; then
+  echo "public CI workflow must read local infrastructure identifiers from secrets, not variables" >&2
+  fail=1
+fi
+
+if grep -Eq 'PROXMOX_NODE:.*\|\|[[:space:]]*["'"'"']|PROXMOX_STORAGE:.*\|\|[[:space:]]*["'"'"']|PROXMOX_(NODE|STORAGE)="\$\{PROXMOX_(NODE|STORAGE):-[^}]+' "$workflow" "$RELEASE_ROOT/scripts/ci/proxmox-auto-release.sh" "$RELEASE_ROOT/scripts/ci/install-proxmox-runner.sh"; then
+  echo "public CI files must not contain hardcoded Proxmox node or storage defaults" >&2
+  fail=1
+fi
+if grep -Eq '/media/|/home/|root@[0-9]|https?://[^[:space:]]*:[0-9]{2,5}' "$workflow" "$RELEASE_ROOT/scripts/ci/proxmox-auto-release.sh" "$RELEASE_ROOT/scripts/ci/install-proxmox-runner.sh"; then
+  echo "public CI files must not contain host-specific paths, SSH targets, or private service URLs" >&2
+  fail=1
+fi
 
 if grep -Eq 'default:[[:space:]]*manifests/' "$workflow"; then
   echo "auto-release workflow still defaults to one static manifest" >&2
@@ -51,7 +68,7 @@ if grep -Eq 'inputs\.(force_build|update_ksun|update_susfs|publish_release|clean
   echo "boolean workflow inputs must not use || fallbacks because manual false would be overwritten" >&2
   fail=1
 fi
-if grep -Eq '/media/|/home/|LOCAL_BUILD_ROOT' "$workflow"; then
+if grep -Eq '/media/|/home/' "$workflow"; then
   echo "auto-release workflow must not expose a host-specific workspace path; use LOKUM_WORKSPACE" >&2
   fail=1
 fi

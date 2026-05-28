@@ -132,12 +132,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LOKUM_CI_SSH_PRIVATE_KEY: ${{ secrets.LOKUM_CI_SSH_PRIVATE_KEY }}
           LOKUM_GIT_TOKEN: ${{ secrets.LOKUM_GIT_TOKEN }}
-          PROXMOX_SSH_TARGET: ${{ secrets.PROXMOX_SSH_TARGET || vars.PROXMOX_SSH_TARGET }}
+          PROXMOX_SSH_TARGET: ${{ secrets.PROXMOX_SSH_TARGET }}
           PROXMOX_SSH_PRIVATE_KEY: ${{ secrets.PROXMOX_SSH_PRIVATE_KEY }}
-          PROXMOX_NODE: ${{ vars.PROXMOX_NODE || 'PROXMOX_NODE' }}
-          PROXMOX_STORAGE: ${{ vars.PROXMOX_STORAGE || 'PROXMOX_STORAGE' }}
-          PROXMOX_CT_TEMPLATE: ${{ vars.PROXMOX_CT_TEMPLATE }}
-          PROXMOX_CT_BRIDGE: ${{ vars.PROXMOX_CT_BRIDGE || 'vmbr0' }}
+          PROXMOX_NODE: ${{ secrets.PROXMOX_NODE }}
+          PROXMOX_STORAGE: ${{ secrets.PROXMOX_STORAGE }}
+          PROXMOX_CT_TEMPLATE: ${{ secrets.PROXMOX_CT_TEMPLATE }}
+          PROXMOX_CT_BRIDGE: ${{ secrets.PROXMOX_CT_BRIDGE || 'vmbr0' }}
           PROXMOX_CT_DISK_GB: ${{ vars.PROXMOX_CT_DISK_GB || '120' }}
           PROXMOX_CT_CORES: ${{ vars.PROXMOX_CT_CORES || '12' }}
           PROXMOX_CT_MEMORY_MB: ${{ vars.PROXMOX_CT_MEMORY_MB || '24576' }}
@@ -192,18 +192,18 @@ jobs:
 
       - name: Validate local self-hosted workspace
         env:
-          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
+          WORKSPACE_ROOT: ${{ secrets.LOKUM_WORKSPACE }}
         run: |
           if [[ -z "${WORKSPACE_ROOT:-}" ]]; then
-            echo "Repository variable LOKUM_WORKSPACE must point to the Android kernel workspace on the self-hosted runner." >&2
+            echo "Repository secret LOKUM_WORKSPACE must point to the Android kernel workspace on the self-hosted runner." >&2
             exit 1
           fi
           if [[ ! -x "$WORKSPACE_ROOT/kernel_platform/tools/bazel" ]]; then
-            echo "Kleaf Bazel wrapper not found under LOKUM_WORKSPACE: $WORKSPACE_ROOT" >&2
+            echo "Kleaf Bazel wrapper not found under LOKUM_WORKSPACE." >&2
             exit 1
           fi
           if [[ ! -d "$WORKSPACE_ROOT/kernel_platform/common/.git" ]]; then
-            echo "Kernel common repo not found under LOKUM_WORKSPACE: $WORKSPACE_ROOT" >&2
+            echo "Kernel common repo not found under LOKUM_WORKSPACE." >&2
             exit 1
           fi
 
@@ -212,7 +212,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
-          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
+          WORKSPACE_ROOT: ${{ secrets.LOKUM_WORKSPACE }}
           SOURCE_BRANCH: ${{ matrix.source_branch }}
           FORCE_BUILD: "true"
           UPDATE_KSUNEXT: ${{ inputs.update_ksun }}
@@ -227,7 +227,7 @@ jobs:
         if: ${{ always() }}
         env:
           MANIFEST: ${{ github.workspace }}/${{ matrix.manifest }}
-          WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE }}
+          WORKSPACE_ROOT: ${{ secrets.LOKUM_WORKSPACE }}
           AUTO_RELEASE_OUT_ROOT: ${{ steps.local_release.outputs.out_root }}
           AUTO_RELEASE_PACKAGE_OUT: ${{ steps.local_release.outputs.package_out }}
           CI_MANIFEST_PATH: ${{ steps.local_release.outputs.ci_manifest }}

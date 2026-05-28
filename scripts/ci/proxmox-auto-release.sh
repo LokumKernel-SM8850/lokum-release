@@ -101,8 +101,8 @@ if [[ ! -f "$MANIFEST" ]]; then
   exit 1
 fi
 
-PROXMOX_NODE="${PROXMOX_NODE:-PROXMOX_NODE}"
-PROXMOX_STORAGE="${PROXMOX_STORAGE:-PROXMOX_STORAGE}"
+PROXMOX_NODE="${PROXMOX_NODE:-}"
+PROXMOX_STORAGE="${PROXMOX_STORAGE:-}"
 PROXMOX_CT_DISK_GB="${PROXMOX_CT_DISK_GB:-120}"
 PROXMOX_CT_CORES="${PROXMOX_CT_CORES:-12}"
 PROXMOX_CT_MEMORY_MB="${PROXMOX_CT_MEMORY_MB:-24576}"
@@ -123,6 +123,8 @@ RELEASE_TOOLING_REF="${RELEASE_TOOLING_REF:-${GITHUB_SHA:-main}}"
 RELEASE_TOOLING_BRANCH="${RELEASE_TOOLING_BRANCH:-main}"
 RELEASE_SUFFIX="${RELEASE_SUFFIX:-}"
 
+require_env PROXMOX_NODE
+require_env PROXMOX_STORAGE
 require_env PROXMOX_CT_TEMPLATE
 setup_proxmox_ssh
 trap cleanup EXIT INT TERM
@@ -153,7 +155,7 @@ fi
 description="lokum-ci run=${run_id} attempt=${attempt} node=${PROXMOX_NODE} created=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 net0="name=eth0,bridge=${PROXMOX_CT_BRIDGE},ip=${PROXMOX_CT_IP}"
 
-echo "Creating Proxmox CT $vmid on $PROXMOX_NODE using $PROXMOX_STORAGE (${PROXMOX_CT_DISK_GB}G)"
+echo "Creating Proxmox CT $vmid with configured Proxmox node/storage (${PROXMOX_CT_DISK_GB}G)"
 remote "pct create $(shell_quote "$vmid") $(shell_quote "$PROXMOX_CT_TEMPLATE") \
   --hostname $(shell_quote "$hostname") \
   --storage $(shell_quote "$PROXMOX_STORAGE") \

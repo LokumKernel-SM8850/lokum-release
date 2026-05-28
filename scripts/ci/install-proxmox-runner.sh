@@ -65,11 +65,10 @@ cleanup() {
 require_command gh
 require_command ssh
 require_command scp
-require_env PROXMOX_RUNNER_TEMPLATE
 
 REPOSITORY_FULL_NAME="${REPOSITORY_FULL_NAME:-${GITHUB_REPOSITORY:-LokumKernel-SM8850/lokum-release}}"
-PROXMOX_NODE="${PROXMOX_NODE:-PROXMOX_NODE}"
-PROXMOX_RUNNER_STORAGE="${PROXMOX_RUNNER_STORAGE:-${PROXMOX_STORAGE:-PROXMOX_STORAGE}}"
+PROXMOX_NODE="${PROXMOX_NODE:-}"
+PROXMOX_RUNNER_STORAGE="${PROXMOX_RUNNER_STORAGE:-${PROXMOX_STORAGE:-}}"
 PROXMOX_RUNNER_DISK_GB="${PROXMOX_RUNNER_DISK_GB:-8}"
 PROXMOX_RUNNER_CORES="${PROXMOX_RUNNER_CORES:-1}"
 PROXMOX_RUNNER_CPULIMIT="${PROXMOX_RUNNER_CPULIMIT:-0.2}"
@@ -82,12 +81,16 @@ PROXMOX_RUNNER_OSTYPE="${PROXMOX_RUNNER_OSTYPE:-debian}"
 PROXMOX_RUNNER_UNPRIVILEGED="${PROXMOX_RUNNER_UNPRIVILEGED:-1}"
 PROXMOX_RUNNER_FEATURES="${PROXMOX_RUNNER_FEATURES:-nesting=1,keyctl=1}"
 PROXMOX_RUNNER_VMID="${PROXMOX_RUNNER_VMID:-}"
-RUNNER_NAME="${RUNNER_NAME:-${PROXMOX_NODE}-lokum-proxmox}"
+RUNNER_NAME="${RUNNER_NAME:-lokum-proxmox}"
 RUNNER_LABELS="${RUNNER_LABELS:-lokum-proxmox}"
 RUNNER_WORKDIR="${RUNNER_WORKDIR:-_work}"
 RUNNER_REPLACE="${RUNNER_REPLACE:-true}"
 LOKUM_NAMESERVER="${LOKUM_NAMESERVER:-1.1.1.1}"
 REPO_URL="https://github.com/${REPOSITORY_FULL_NAME}"
+
+require_env PROXMOX_NODE
+require_env PROXMOX_RUNNER_STORAGE
+require_env PROXMOX_RUNNER_TEMPLATE
 
 tmp_dir="$(mktemp -d)"
 trap cleanup EXIT INT TERM
@@ -112,7 +115,7 @@ description="lokum GitHub Actions orchestrator runner for ${REPOSITORY_FULL_NAME
 if remote "pct status $(shell_quote "$vmid") >/dev/null 2>&1"; then
   echo "Runner CT already exists: $vmid"
 else
-  echo "Creating runner CT $vmid on $PROXMOX_NODE using $PROXMOX_RUNNER_STORAGE (${PROXMOX_RUNNER_DISK_GB}G)"
+  echo "Creating runner CT $vmid with configured Proxmox node/storage (${PROXMOX_RUNNER_DISK_GB}G)"
   remote "pct create $(shell_quote "$vmid") $(shell_quote "$PROXMOX_RUNNER_TEMPLATE") \
     --hostname $(shell_quote "lokum-runner") \
     --storage $(shell_quote "$PROXMOX_RUNNER_STORAGE") \
