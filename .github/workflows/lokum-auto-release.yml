@@ -10,13 +10,13 @@ on:
       source_branch:
         description: Kernel source branch in LokumKernel-SM8850/android_kernel_xiaomi_sm8850
         required: true
-        default: android16-6.12-2025-09-ksunext-susfs
+        default: 6.12.38-android16-5-lokumkernel-ksun-susfs-exp1
       force_build:
         description: Build even when tracked KernelSU/SUSFS upstream heads have not changed
         type: boolean
         required: true
         default: true
-      update_ksunext:
+      update_ksun:
         description: Try to replay the Lokum KernelSU/SUSFS integration on latest KernelSU Next dev
         type: boolean
         required: true
@@ -72,7 +72,7 @@ jobs:
           WORKSPACE_ROOT: ${{ vars.LOKUM_WORKSPACE || 'LOKUM_WORKSPACE' }}
           SOURCE_BRANCH: ${{ inputs.source_branch }}
           FORCE_BUILD: ${{ inputs.force_build }}
-          UPDATE_KSUNEXT: ${{ inputs.update_ksunext }}
+          UPDATE_KSUNEXT: ${{ inputs.update_ksun }}
           UPDATE_SUSFS: ${{ inputs.update_susfs }}
           PUBLISH_RELEASE: ${{ inputs.publish_release }}
           RELEASE_SUFFIX: ${{ inputs.release_suffix }}

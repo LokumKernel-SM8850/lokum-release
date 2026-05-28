@@ -11,7 +11,7 @@ require_command gh
 require_command python3
 require_command sha256sum
 
-SOURCE_BRANCH="${SOURCE_BRANCH:-${KERNEL_COMMON_BRANCH:-android16-6.12-2025-09-ksunext-susfs}}"
+SOURCE_BRANCH="${SOURCE_BRANCH:-${KERNEL_COMMON_BRANCH:-6.12.38-android16-5-lokumkernel-ksun-susfs-exp1}}"
 PUBLISH_RELEASE="${PUBLISH_RELEASE:-true}"
 FORCE_BUILD="${FORCE_BUILD:-false}"
 UPDATE_KSUNEXT="${UPDATE_KSUNEXT:-true}"
@@ -91,7 +91,7 @@ if bool_true "$UPDATE_KSUNEXT" && [[ "$ksu_changed" == true ]]; then
     exit 1
   fi
   git -C "$KERNELSU_NEXT_REPO" fetch origin "$KERNELSU_NEXT_TRACK_REF"
-  git -C "$KERNELSU_NEXT_REPO" checkout -B "ci/lokum-ksunext-${ksu_latest:0:12}" "$ksu_latest"
+  git -C "$KERNELSU_NEXT_REPO" checkout -B "ci/lokum-ksun-${ksu_latest:0:12}" "$ksu_latest"
   git -C "$KERNELSU_NEXT_REPO" cherry-pick "$KERNELSU_NEXT_SUSFS_PATCH_COMMIT"
   actual_ksu_head="$(git -C "$KERNELSU_NEXT_REPO" rev-parse HEAD)"
   if bool_true "$PUSH_KSUNEXT_BRANCH"; then
