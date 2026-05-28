@@ -149,6 +149,8 @@ jobs:
           UPDATE_KSUNEXT: ${{ inputs.update_ksun }}
           UPDATE_SUSFS: ${{ inputs.update_susfs }}
           PUBLISH_RELEASE: ${{ inputs.publish_release }}
+          PUSH_SOURCE_BRANCH: ${{ inputs.publish_release }}
+          PUSH_KSUNEXT_BRANCH: ${{ inputs.publish_release }}
           RELEASE_SUFFIX: ${{ inputs.release_suffix || '' }}
         run: scripts/ci/proxmox-auto-release.sh
 
@@ -216,6 +218,8 @@ jobs:
           UPDATE_KSUNEXT: ${{ inputs.update_ksun }}
           UPDATE_SUSFS: ${{ inputs.update_susfs }}
           PUBLISH_RELEASE: ${{ inputs.publish_release }}
+          PUSH_SOURCE_BRANCH: ${{ inputs.publish_release }}
+          PUSH_KSUNEXT_BRANCH: ${{ inputs.publish_release }}
           RELEASE_SUFFIX: ${{ inputs.release_suffix || '' }}
         run: scripts/ci/auto-release.sh
 
