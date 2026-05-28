@@ -19,6 +19,13 @@ expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env
 expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'KERNEL_COMMON_HEAD="4131670aae805c1f361a1c8bc15dd3e58ad492a7"'
 expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'RELEASE_ID="lokumkernel-xiaomi17pro-6.12.38-ksun-susfs-exp1"'
 expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-exp.env" 'RELEASE_ZIP_NAME="LokumKernel-Xiaomi17Pro-6.12.38-KSun-SUSFS-exp1.zip"'
+expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-droidspaces-exp.env" 'KERNEL_RELEASE="6.12.38-android16-5-LokumKernel-Droidspaces"'
+expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-droidspaces-exp.env" 'KERNEL_COMMON_BRANCH="6.12.38-android16-5-lokumkernel-ksun-susfs-droidspaces-exp1"'
+expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-droidspaces-exp.env" 'KERNEL_COMMON_HEAD="a71ebf3075382bd5b083ab332d756a758e97a3c4"'
+expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-droidspaces-exp.env" 'RELEASE_ID="lokumkernel-xiaomi17pro-6.12.38-ksun-susfs-droidspaces-exp1"'
+expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-droidspaces-exp.env" 'RELEASE_ZIP_NAME="LokumKernel-Xiaomi17Pro-6.12.38-KSun-SUSFS-Droidspaces-exp1.zip"'
+expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-droidspaces-exp.env" 'FEATURE_LABEL="KSun + SUSFS v2.1.0 + Droidspaces"'
+expect_line "$RELEASE_ROOT/manifests/pandora-os3.0.309-android16-6.12.38-droidspaces-exp.env" 'RELEASE_TITLE="LokumKernel 6.12.38 Droidspaces exp1"'
 
 if rg -n 'ksunext|KernelSUNext|pandora-6\.12\.23-ksun|android16-6\.12-2025-09-ksun|pandora-os3\.0\.309-lokumkernel|LokumKernel-pandora' \
   "$RELEASE_ROOT/manifests" "$RELEASE_ROOT/docs" >/tmp/lokum-old-metadata-names.txt; then

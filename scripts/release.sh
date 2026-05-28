@@ -10,13 +10,13 @@ source "$SCRIPT_DIR/common.sh"
 NOTES="$OUT_ROOT/release-notes.md"
 mkdir -p "$OUT_ROOT"
 cat > "$NOTES" <<NOTES_EOF
-# LokumKernel $KERNEL_BASE ${RELEASE_ID##*-}
+# ${RELEASE_TITLE:-LokumKernel $KERNEL_BASE ${RELEASE_ID##*-}}
 
 - Device: $DEVICE_MARKETING_NAME
 - Codename: $DEVICE_CODENAME
 - Firmware: $FIRMWARE_ID
 - Kernel: $KERNEL_RELEASE
-- Root: KSun + SUSFS $SUSFS_VERSION
+- Features: ${FEATURE_LABEL:-KSun + SUSFS $SUSFS_VERSION}
 
 ## Files
 

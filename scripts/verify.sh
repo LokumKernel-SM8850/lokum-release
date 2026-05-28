@@ -57,17 +57,24 @@ if [[ -n "$config_file" ]]; then
     echo "Old SUSFS uname spoof config is still present in .config: $config_file" >&2
     exit 1
   fi
-  for required in \
-    CONFIG_KSU=y \
-    CONFIG_KSU_SUSFS=y \
-    CONFIG_KSU_SUSFS_SUS_PATH=y \
-    CONFIG_KSU_SUSFS_SUS_MOUNT=y \
-    CONFIG_KSU_SUSFS_SUS_KSTAT=y \
-    CONFIG_KSU_SUSFS_SPOOF_UNAME=y \
-    CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y \
-    CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y \
-    CONFIG_KSU_SUSFS_OPEN_REDIRECT=y \
-    CONFIG_KSU_SUSFS_SUS_MAP=y; do
+  required_configs=(
+    CONFIG_KSU=y
+    CONFIG_KSU_SUSFS=y
+    CONFIG_KSU_SUSFS_SUS_PATH=y
+    CONFIG_KSU_SUSFS_SUS_MOUNT=y
+    CONFIG_KSU_SUSFS_SUS_KSTAT=y
+    CONFIG_KSU_SUSFS_SPOOF_UNAME=y
+    CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
+    CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
+    CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
+    CONFIG_KSU_SUSFS_SUS_MAP=y
+  )
+  if [[ -n "${EXTRA_REQUIRED_CONFIGS:-}" ]]; then
+    # shellcheck disable=SC2206
+    extra_required_configs=($EXTRA_REQUIRED_CONFIGS)
+    required_configs+=("${extra_required_configs[@]}")
+  fi
+  for required in "${required_configs[@]}"; do
     if ! grep -Fxq "$required" "$config_file"; then
       echo "Kernel .config missing required option: $required" >&2
       exit 1
