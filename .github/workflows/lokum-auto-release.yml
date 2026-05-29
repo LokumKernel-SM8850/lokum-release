@@ -50,7 +50,7 @@ on:
         required: false
         default: ""
   schedule:
-    - cron: "17 2 * * *"
+    - cron: "0 9 * * *"
 
 permissions:
   contents: write
