@@ -45,6 +45,8 @@ expect_text "$workflow" 'secrets\.LOKUM_WORKSPACE' 'secret-backed local workspac
 expect_text "$workflow" 'LOKUM_GIT_TOKEN' 'cross-repository Git write token support'
 expect_text "$workflow" 'lokum-proxmox' 'dedicated Proxmox runner label'
 expect_text "$RELEASE_ROOT/scripts/ci/install-proxmox-runner.sh" 'RUNNER_LABELS.*lokum-proxmox' 'Proxmox runner installer label'
+expect_text "$RELEASE_ROOT/scripts/ci/install-proxmox-runner.sh" 'supersede domain-name-servers' 'runner fixed DNS guard'
+expect_text "$RELEASE_ROOT/scripts/ci/proxmox-guest-build.sh" 'supersede domain-name-servers' 'guest fixed DNS guard'
 
 
 if grep -Eq 'vars\.(LOKUM_WORKSPACE|PROXMOX_SSH_TARGET|PROXMOX_NODE|PROXMOX_STORAGE|PROXMOX_CT_TEMPLATE|PROXMOX_CT_BRIDGE)' "$workflow"; then

@@ -86,6 +86,7 @@ RUNNER_LABELS="${RUNNER_LABELS:-lokum-proxmox}"
 RUNNER_WORKDIR="${RUNNER_WORKDIR:-_work}"
 RUNNER_REPLACE="${RUNNER_REPLACE:-true}"
 LOKUM_NAMESERVER="${LOKUM_NAMESERVER:-1.1.1.1}"
+LOKUM_FALLBACK_NAMESERVER="${LOKUM_FALLBACK_NAMESERVER:-8.8.8.8}"
 REPO_URL="https://github.com/${REPOSITORY_FULL_NAME}"
 
 require_env PROXMOX_NODE
@@ -152,6 +153,7 @@ RUNNER_LABELS=$(shell_quote "$RUNNER_LABELS")
 RUNNER_WORKDIR=$(shell_quote "$RUNNER_WORKDIR")
 RUNNER_REPLACE=$(shell_quote "$RUNNER_REPLACE")
 LOKUM_NAMESERVER=$(shell_quote "$LOKUM_NAMESERVER")
+LOKUM_FALLBACK_NAMESERVER=$(shell_quote "$LOKUM_FALLBACK_NAMESERVER")
 EOF_ENV
 
 cat > "$tmp_dir/install-runner-inside-ct.sh" <<'EOF_INNER'
@@ -161,11 +163,26 @@ ENV_FILE="/root/lokum-runner.env"
 # shellcheck source=/dev/null
 source "$ENV_FILE"
 export DEBIAN_FRONTEND=noninteractive
-if [[ -n "${LOKUM_NAMESERVER:-}" ]]; then
-  printf 'nameserver %s\n' "$LOKUM_NAMESERVER" > /etc/resolv.conf
-fi
-grep -q '^precedence ::ffff:0:0/96  100$' /etc/gai.conf 2>/dev/null \
-  || printf '\nprecedence ::ffff:0:0/96  100\n' >> /etc/gai.conf
+configure_network_defaults() {
+  local primary="${LOKUM_NAMESERVER:-1.1.1.1}"
+  local fallback="${LOKUM_FALLBACK_NAMESERVER:-8.8.8.8}"
+  if [[ -f /etc/dhcp/dhclient.conf ]] && ! grep -q 'Lokum fixed DNS' /etc/dhcp/dhclient.conf; then
+    cat >> /etc/dhcp/dhclient.conf <<EOF_DHCP
+
+# Lokum fixed DNS: keep GitHub Actions checkout independent from LAN DNS hiccups.
+supersede domain-name-servers ${primary}, ${fallback};
+supersede domain-search "";
+EOF_DHCP
+  fi
+  cat > /etc/resolv.conf <<EOF_RESOLV
+nameserver ${primary}
+nameserver ${fallback}
+options timeout:2 attempts:3 rotate
+EOF_RESOLV
+  grep -q '^precedence ::ffff:0:0/96  100$' /etc/gai.conf 2>/dev/null \
+    || printf '\nprecedence ::ffff:0:0/96  100\n' >> /etc/gai.conf
+}
+configure_network_defaults
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates curl git jq openssh-client sudo tar gzip
 if ! id actions >/dev/null 2>&1; then
@@ -204,6 +221,7 @@ sudo -u actions ./config.sh \
   --work "$RUNNER_WORKDIR" \
   "${replace_arg[@]}"
 ./svc.sh install actions
+configure_network_defaults
 ./svc.sh start
 systemctl is-active actions.runner.*.service
 rm -f "$ENV_FILE"

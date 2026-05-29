@@ -31,9 +31,21 @@ require_command() {
 }
 
 configure_network_defaults() {
-  if [[ -n "${LOKUM_NAMESERVER:-1.1.1.1}" ]]; then
-    printf 'nameserver %s\n' "${LOKUM_NAMESERVER:-1.1.1.1}" > /etc/resolv.conf
+  local primary="${LOKUM_NAMESERVER:-1.1.1.1}"
+  local fallback="${LOKUM_FALLBACK_NAMESERVER:-8.8.8.8}"
+  if [[ -f /etc/dhcp/dhclient.conf ]] && ! grep -q 'Lokum fixed DNS' /etc/dhcp/dhclient.conf; then
+    cat >> /etc/dhcp/dhclient.conf <<EOF_DHCP
+
+# Lokum fixed DNS: keep GitHub/repo sync independent from LAN DNS hiccups.
+supersede domain-name-servers ${primary}, ${fallback};
+supersede domain-search "";
+EOF_DHCP
   fi
+  cat > /etc/resolv.conf <<EOF_RESOLV
+nameserver ${primary}
+nameserver ${fallback}
+options timeout:2 attempts:3 rotate
+EOF_RESOLV
   grep -q '^precedence ::ffff:0:0/96  100$' /etc/gai.conf 2>/dev/null \
     || printf '\nprecedence ::ffff:0:0/96  100\n' >> /etc/gai.conf
 }
